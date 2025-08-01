@@ -1,0 +1,30 @@
+Background
+Corpus Medullare
+Left I-III
+Right I-III
+Left IV
+Rigt IV
+Left V
+Right V
+Vermis VI
+Left VI
+Right VI
+Vermis VII
+Left Crus I
+Left Crus II
+Left VIIB
+Right Crus I
+Right Crus II
+Right VIIB
+Vermis VIII
+Left VIIIA
+Left VIIIB
+Right VIIIA
+Right VIIIB
+Vermis IX
+Left IX
+Right IX
+Vermis X
+Left X
+Right X
+
