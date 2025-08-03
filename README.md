@@ -52,7 +52,7 @@ _Expected runtime_: ~30 minutes per cerebellar atlas.
 
 ### Data
 This study is based on openly accessible data from the Lifespan Baby Connectome Project (BCP; https://nda.nih.gov/edit_collection.html?id=2848) and the Lifespan 2.0 Human Connectome Project in Development (HCP-D; nda.nih.gov/general-query.html?q=query=featured-datasets:HCP%20Aging%20and%20Development). Cerebellar atlases are available here: https://github.com/DiedrichsenLab/cerebellar_atlases/tree/master.
-This study is based on openly accessible data from the Lifespan Baby Connectome Project (BCP; ) and the Lifespan 2.0 Human Connectome Project in Development (HCP-D; https://nda.nih.gov/general-query.html?q=query=featured-datasets:HCP%20Aging%20and%20Development). Cerebellar atlases are available here: https://github.com/DiedrichsenLab/cerebellar_atlases/tree/master.
+This study is based on openly accessible data from the Lifespan Baby Connectome Project (BCP; https://nda.nih.gov/edit_collection.html?id=2848) and the Lifespan 2.0 Human Connectome Project in Development (HCP-D; https://nda.nih.gov/general-query.html?q=query=featured-datasets:HCP%20Aging%20and%20Development). Cerebellar atlases are available here: https://github.com/DiedrichsenLab/cerebellar_atlases/tree/master.
 
 Linear and b-spline normative models for cerebellar anatomical and functional parcels are available in the **normative_models** folder. Labels for cerebral and cerebellar anatomical and functional parcellations are available in the **atlas_labels** folder.
 
