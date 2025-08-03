@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+@author: manoli
+"""
+
 import os
 import pandas as pd
 import numpy as np
