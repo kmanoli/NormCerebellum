@@ -1,6 +1,6 @@
 ## Cerebellar growth is associated with domain-specific cerebral maturation and behavioral outcomes 
 
-### This repository contains analysis scripts and cerebellar normative models presented in this manuscript: TBD
+#### This repository contains analysis scripts and cerebellar normative models presented in this manuscript: TBD
 
 ### Instructions
 If you'd like to reproduce the analyses in the manuscript, you can run the following scripts:
