@@ -317,7 +317,7 @@ p_values_matrix = np.zeros((len(cortical_names), len(cereb_names)))
 total_pairs = len(cortical_names) * len(cereb_names)
 processed_pairs = 0
 start_time = time.time()
-n_permutations = 1000
+n_permutations = 10000
 
 print(f"Testing {total_pairs} cortical-cerebellar pairs")
 print(f"Using {n_permutations} permutations per pair")
