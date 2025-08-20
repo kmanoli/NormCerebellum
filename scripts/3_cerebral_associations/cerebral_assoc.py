@@ -372,7 +372,7 @@ alpha_threshold = 0.05
 flat_pvals = p_values_matrix.flatten()
 rejected, p_corrected = fdrcorrection(flat_pvals, alpha=alpha_threshold, method='indep')
 p_values_matrix_fdr = p_corrected.reshape(p_values_matrix.shape)
-significance_mask_fdr = p_values_matrix_fdr > alpha_threshold
+significance_mask_fdr = p_values_matrix_fdr < alpha_threshold
 
 p_values_fdr_df = pd.DataFrame(p_values_matrix_fdr, index=cortical_names, columns=cereb_names)
 
