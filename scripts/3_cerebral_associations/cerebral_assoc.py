@@ -384,7 +384,7 @@ p_values_fdr_df = pd.DataFrame(p_values_matrix_fdr, index=cortical_names, column
 plt.figure(figsize=(10, 10))
 sns.heatmap(
     data=weights_df, 
-    mask=significance_mask_fdr, 
+    mask=~significance_mask_fdr, # Inverted to mask the non-significant entries
     cmap='coolwarm', 
     vmin=-0.2, vmax=0.2,
     center=0, 
