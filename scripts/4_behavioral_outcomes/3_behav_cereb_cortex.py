@@ -154,7 +154,7 @@ for model_name in models.keys():
             
 df_r2 = pd.DataFrame(df_list)
 
-###############################
+##############################
 #### MODEL COMPARISON PLOT ###
 ##############################
 
