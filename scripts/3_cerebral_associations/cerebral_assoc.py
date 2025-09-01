@@ -182,99 +182,73 @@ y_scaled = scaler_y.fit_transform(cortical_data.values)
 
 # Fit the best model type on all data to get the optimal alpha
 if best_model == 'Ridge':
+    # Multioutput RidgeCV for global alpha
     final_model = RidgeCV(alphas=alphas, cv=10)
+    final_model.fit(X_scaled, y_scaled)
+    best_alpha = final_model.alpha_
+    print(f"Global alpha selected by RidgeCV: {best_alpha:.4f}")
 elif best_model == 'Lasso':
-    final_model = LassoCV(alphas=alphas, cv=10, max_iter=10000)
-else:  # ElasticNet
-    final_model = ElasticNetCV(alphas=alphas, l1_ratio=[0.1, 0.5, 0.7, 0.9, 0.99], cv=10, max_iter=10000)
+    # LassoCV does not support multioutput, so pick median of parcel-wise alphas
+    parcel_alphas = []
+    for i in range(y_scaled.shape[1]):
+        lasso_cv = LassoCV(alphas=alphas, cv=10, max_iter=10000)
+        lasso_cv.fit(X_scaled, y_scaled[:, i])
+        parcel_alphas.append(lasso_cv.alpha_)
+    best_alpha = np.median(parcel_alphas)
+    print(f"Global alpha (median of parcel-wise LassoCV): {best_alpha:.4f}")
+elif best_model == 'ElasticNet':
+    parcel_alphas = []
+    parcel_l1 = []
+    for i in range(y_scaled.shape[1]):
+        enet_cv = ElasticNetCV(alphas=alphas, l1_ratio=[0.1,0.5,0.7,0.9,0.99], cv=10, max_iter=10000)
+        enet_cv.fit(X_scaled, y_scaled[:, i])
+        parcel_alphas.append(enet_cv.alpha_)
+        parcel_l1.append(enet_cv.l1_ratio_)
+    best_alpha = np.median(parcel_alphas)
+    best_l1_ratio = np.median(parcel_l1)
+    print(f"Global alpha (median of ElasticNetCV): {best_alpha:.4f}")
+    print(f"Global l1_ratio (median of ElasticNetCV): {best_l1_ratio:.2f}")
 
-# Fit on first cortical parcel to get the selected alpha (and l1_ratio for ElasticNet)
-final_model.fit(X_scaled, y_scaled[:, 0])
-best_alpha = final_model.alpha_
-
-if best_model == 'ElasticNet':
-    best_l1_ratio = final_model.l1_ratio_
-    print(f"Optimal alpha selected by {best_model}: {best_alpha:.4f}")
-    print(f"Optimal l1_ratio selected by {best_model}: {best_l1_ratio:.2f}")
-else:
-    best_l1_ratio = None
-    print(f"Optimal alpha selected by {best_model}: {best_alpha:.4f}")
-
-# Save model selection results
-if best_model == 'ElasticNet':
-    results_text = f"""Model Selection Results (Nested Cross-Validation)
-================================================
-
-Winning Model: {best_model}
-Optimal Alpha: {best_alpha:.4f}
-Optimal L1 Ratio: {best_l1_ratio:.2f}
-Cross-validated R²: {best_r2:.4f} ± {std_r2_per_model[best_model]:.4f}
-
-All Models Comparison:
-- Ridge: R²={mean_r2_per_model['Ridge']:.4f} ± {std_r2_per_model['Ridge']:.4f}
-- Lasso: R²={mean_r2_per_model['Lasso']:.4f} ± {std_r2_per_model['Lasso']:.4f}  
-- ElasticNet: R²={mean_r2_per_model['ElasticNet']:.4f} ± {std_r2_per_model['ElasticNet']:.4f}
-"""
-else:
-    results_text = f"""Model Selection Results (Nested Cross-Validation)
-================================================
-
-Winning Model: {best_model}
-Optimal Alpha: {best_alpha:.4f}
-Cross-validated R²: {best_r2:.4f} ± {std_r2_per_model[best_model]:.4f}
-
-All Models Comparison:
-- Ridge: R²={mean_r2_per_model['Ridge']:.4f} ± {std_r2_per_model['Ridge']:.4f}
-- Lasso: R²={mean_r2_per_model['Lasso']:.4f} ± {std_r2_per_model['Lasso']:.4f}  
-- ElasticNet: R²={mean_r2_per_model['ElasticNet']:.4f} ± {std_r2_per_model['ElasticNet']:.4f}
-"""
-
-with open(os.path.join(data_dir, 'cerebral_associations/model_selection_results.txt'), 'w') as f:
-    f.write(results_text)
-
-# Now apply the best model with the selected alpha to all cortical parcels
+# Now apply the best model with the selected global alpha to all cortical parcels
 results_df = pd.DataFrame(index=cortical_names, columns=['R2', 'Top10_Regions', 'Top10_Coefficients'])
 weights_matrix = np.zeros((len(cortical_names), len(cereb_names)))
 
 for i, cortical_name in enumerate(cortical_names):
     if i % 10 == 0:
         print(f"Analyzing parcel: {cortical_name} ({i+1}/{len(cortical_names)})")
-    
+
     y = y_scaled[:, i]
     X = X_scaled
-    
-    # Use the best model with the optimal alpha (and l1_ratio for ElasticNet)
+
+    # Use best model with global alpha (and L1 ratio for ElasticNet)
     if best_model == 'Ridge':
         model = Ridge(alpha=best_alpha, max_iter=10000, random_state=42)
     elif best_model == 'Lasso':
         model = Lasso(alpha=best_alpha, max_iter=10000, random_state=42)
     else:  # ElasticNet
         model = ElasticNet(alpha=best_alpha, l1_ratio=best_l1_ratio, max_iter=10000, random_state=42)
-    
+   
     # Fit on all data
     model.fit(X, y)
     weights_matrix[i, :] = model.coef_
-    
+
     # Calculate R² on the full dataset
     y_pred = model.predict(X)
     r2 = r2_score(y, y_pred)
-    
-    # Get coefficients and identify top regions
+
+    # Get coefficients and identify top 10 regions
     coefs = model.coef_
-    importance = np.abs(coefs)
-    sorted_idx = np.argsort(importance)[::-1]
-    
-    # Get all cerebellar regions sorted by importance
-    all_regions = [cereb_names[j] for j in sorted_idx]
-    all_coefs = [coefs[j] for j in sorted_idx]
+    sorted_idx = np.argsort(np.abs(coefs))[::-1]
+    top_regions = [cereb_names[j] for j in sorted_idx[:10]]
+    top_coefs = [coefs[j] for j in sorted_idx[:10]]
 
     # Store results
     results_df.loc[cortical_name, 'R2'] = r2
-    results_df.loc[cortical_name, 'All_Regions'] = str(all_regions)
-    results_df.loc[cortical_name, 'All_Coefficients'] = str(all_coefs)
+    results_df.loc[cortical_name, 'Top10_Regions'] = str(top_regions)
+    results_df.loc[cortical_name, 'Top10_Coefficients'] = str(top_coefs)
 
-# Sort the results by R²
-results_df = pd.DataFrame(index=cortical_names, columns=['R2', 'All_Regions', 'All_Coefficients'])
+# Sort results by R²
+results_df = results_df.sort_values('R2', ascending=False)
 
 # Plot bar chart of R² values for all parcels
 plt.figure(figsize=(14, 10))
@@ -285,7 +259,8 @@ plt.ylabel('R² Value')
 plt.title(f'Prediction Performance for All Cortical Parcels (Using {best_model})')
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.savefig(os.path.join(data_dir, 'cerebral_associations/all_parcels_performance.png'), dpi=300, bbox_inches='tight')
+plt.savefig(os.path.join(dir, 'cerebral_associations/all_parcels_performance.png'), dpi=300, bbox_inches='tight')
+plt.show()
 
 # Save results
 results_df.to_csv(os.path.join(data_dir, 'cerebral_associations/all_parcels_performance.csv'))
