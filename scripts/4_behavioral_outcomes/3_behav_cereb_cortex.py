@@ -120,7 +120,7 @@ for behavior in behavior_names:
 ### CALCULATE MEAN AND STANDARD ERROR ###
 #########################################
 
-# Calculate mean and standard error for each model, data type, and behavior
+# Calculate mean R² and standard error for each model, feature set, and behavior separately
 mean_r2 = {
     model_name: {
         data_type: {
@@ -139,7 +139,7 @@ sem_r2 = {
     } for model_name in models.keys()
 }
 
-# Create dataframe for easier plotting
+# Create dataframe of mean R² for each model, feature set, and behavior
 df_list = []
 for model_name in models.keys():
     for data_type in ['Cortex', 'Cerebellum', 'Combined']:
@@ -151,8 +151,47 @@ for model_name in models.keys():
                 'R²': mean_r2[model_name][data_type][behav],
                 'SEM': sem_r2[model_name][data_type][behav]
             })
-            
+
 df_r2 = pd.DataFrame(df_list)
+
+# Compute mean R² across feature sets for each model × behavior
+mean_r2_across_sets = {
+    model_name: {
+        behav: np.mean([
+            mean_r2[model_name]['Cortex'][behav],
+            mean_r2[model_name]['Cerebellum'][behav],
+            mean_r2[model_name]['Combined'][behav]
+        ])
+        for behav in behavior_names
+    }
+    for model_name in models.keys()
+}
+
+# Compute SEM across feature sets
+sem_r2_across_sets = {
+    model_name: {
+        behav: np.std([
+            mean_r2[model_name]['Cortex'][behav],
+            mean_r2[model_name]['Cerebellum'][behav],
+            mean_r2[model_name]['Combined'][behav]
+        ], ddof=1) / np.sqrt(3)  # divide by sqrt(3 feature sets)
+        for behav in behavior_names
+    }
+    for model_name in models.keys()
+}
+
+# Create dataframe of mean R² across feature sets
+df_avg_list = []
+for model_name in models.keys():
+    for behav in behavior_names:
+        df_avg_list.append({
+            'Model': model_name,
+            'Behavior': behav,
+            'R²': mean_r2_across_sets[model_name][behav],
+            'SEM': sem_r2_across_sets[model_name][behav]
+        })
+
+df_avg_r2 = pd.DataFrame(df_avg_list)
 
 ##############################
 #### MODEL COMPARISON PLOT ###
@@ -160,42 +199,38 @@ df_r2 = pd.DataFrame(df_list)
 
 plt.figure(figsize=(7, 6))
 
-# Filter for combined models only and selected behaviors
+# Filter for socio-linguistic behaviors
 selected_behaviors = ['lang_compr', 'reading', 'srs']
-df_filtered = df_r2[(df_r2['Data Type'] == 'Combined') & 
-                    (df_r2['Behavior'].isin(selected_behaviors))]
+df_filtered_avg = df_avg_r2[df_avg_r2['Behavior'].isin(selected_behaviors)]
 
-# Use the specified order for behaviors
-behavior_order = selected_behaviors
+# Define color palette
+palette = ['silver', 'dimgrey', '#C4226F'] # Ridge, Lasso, ElasticNet
 
-# Define mixed palette: lighter greys for Ridge and Lasso, pink for ElasticNet
-mixed_palette = ['silver', 'dimgrey', '#C4226F']
-
-# Plot bars 
+# Plot mean R² (averaged across feature sets)
 ax = plt.gca()
 g = sns.barplot(
     x='Behavior', 
     y='R²', 
     hue='Model', 
-    data=df_filtered,
-    order=behavior_order,
-    palette=mixed_palette,
+    data=df_filtered_avg,
+    order=selected_behaviors,
+    palette=palette,
     alpha=0.95
 )
 
 # Add error bars 
 for i, model_name in enumerate(['Ridge', 'Lasso', 'ElasticNet']):
-    for j, behavior in enumerate(behavior_order):
+    for j, behavior in enumerate(selected_behaviors):
         # Get the subset of data for this model and behavior
-        subset = df_filtered[(df_filtered['Model'] == model_name) & 
-                             (df_filtered['Behavior'] == behavior)]
+        subset = df_filtered_avg[(df_filtered_avg['Model'] == model_name) & 
+                             (df_filtered_avg['Behavior'] == behavior)]
         
         # Skip if no data available
         if len(subset) == 0:
             continue
             
         # Get the position within each behavior group
-        bar_positions = np.arange(len(behavior_order))
+        bar_positions = np.arange(len(selected_behaviors))
         # Width of a group of bars
         width = 0.8
         # Width of an individual bar
@@ -227,12 +262,8 @@ plt.savefig(os.path.join(data_dir,  'behavioral_outcomes', 'reg_model_comparison
 # Filter data for ElasticNet only
 df_elasticnet = df_r2[df_r2['Model'] == 'ElasticNet']
 
-# Filter for only the requested behaviors
-selected_behaviors = ['lang_compr', 'reading', 'srs']
+# Filter for only socio-linguistic behaviors
 df_elasticnet_filtered = df_elasticnet[df_elasticnet['Behavior'].isin(selected_behaviors)]
-
-# Set custom behavior order
-behavior_order = ['lang_compr', 'reading', 'srs']
 
 plt.figure(figsize=(7, 7))
 
@@ -247,7 +278,7 @@ color_dict = {
 ax = plt.gca()
 
 # Define positions for each behavior
-behavior_positions = {behavior: i for i, behavior in enumerate(behavior_order)}
+behavior_positions = {behavior: i for i, behavior in enumerate(selected_behaviors)}
 
 # Define offsets for each data type within a behavior group
 offsets = {'Cortex': -0.25, 'Cerebellum': 0, 'Combined': 0.25}
@@ -260,7 +291,7 @@ max_val = 0
 # Manually plot each bar and its error bar
 for data_type in ['Cortex', 'Cerebellum', 'Combined']:
     color = color_dict[data_type]
-    for behavior in behavior_order:
+    for behavior in selected_behaviors:
         # Get data for this combination
         subset = df_elasticnet[(df_elasticnet['Data Type'] == data_type) & 
                              (df_elasticnet['Behavior'] == behavior)]
@@ -281,13 +312,13 @@ for data_type in ['Cortex', 'Cerebellum', 'Combined']:
         
         # Draw the bar
         ax.bar(x_pos, r2_value, width=bar_width, color=color, alpha=0.95, 
-               label=data_type if behavior == behavior_order[0] else "")
+               label=data_type if behavior == selected_behaviors[0] else "")
         
         # Draw the error bar
         ax.errorbar(x_pos, r2_value, yerr=sem_value, fmt='none', color='#555555', 
                    capsize=3, linewidth=1.0, ecolor='#555555')
 
-plt.xticks([behavior_positions[b] for b in behavior_order], behavior_order, fontsize=11, rotation=0)
+plt.xticks([behavior_positions[b] for b in selected_behaviors], selected_behaviors, fontsize=11, rotation=0)
 plt.xlabel('', fontsize=12)  # Remove x-axis label since behavior names are clear
 plt.ylabel('R²', fontsize=12)
 plt.grid(axis='y', linestyle='--', alpha=0.2)
