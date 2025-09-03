@@ -26,7 +26,7 @@ _Expected outputs_: Parcel-wise normative models, model diagnostics, and quantil
 
 _Expected runtime_: ~3 minutes per parcel per model type (linear or b-spline). This might vary based on computational infrastructure, model algorithm, and batch effects.
 
-<img width="955" height="576" alt="Screenshot 2025-08-03 at 20 38 44" src="https://github.com/user-attachments/assets/ab0e8b5b-82bb-45bc-9934-403eecf13903" />
+<img width="1024" height="593" alt="Screenshot 2025-09-03 at 15 03 06" src="https://github.com/user-attachments/assets/a4f99b0c-4785-4759-9412-582e16fc7189" />
 
 #### C. Associations with cerebral cortex
 Scripts in **scripts/3_cerebral_associations** perform associations of growth trajectories between the cerebellum and the cerebral cortex (Desikan-Killiany atlas) via regularized regression.
@@ -36,7 +36,7 @@ _Expected outputs_: Heatmap and cerebral cortex plots of significant cerebro-cer
 
 _Expected runtime_: ~2 hours per cerebellar atlas.
 
-<img width="665" height="642" alt="Screenshot 2025-08-03 at 20 35 51" src="https://github.com/user-attachments/assets/ca84e5a5-ec87-4c44-b04f-6ba6e403ae46" />
+<img width="705" height="646" alt="Screenshot 2025-09-03 at 15 03 28" src="https://github.com/user-attachments/assets/bde2a918-4807-42b0-bb13-ef4964ed0169" />
 
 #### D. Associations with behavioral outcomes
 Scripts in **scripts/4_behavioral_outcomes** perform associations of cerebellar growth trajectories and individual differences in behavioral markers.
@@ -48,7 +48,7 @@ _Expected outputs_: Plots of cerebellar-behavioral associations.
 
 _Expected runtime_: ~30 minutes per cerebellar atlas.
 
-<img width="530" height="638" alt="Screenshot 2025-08-03 at 20 27 17" src="https://github.com/user-attachments/assets/83122918-997e-49ac-9548-d0081148ab3c" />
+<img width="520" height="601" alt="Screenshot 2025-09-03 at 15 03 53" src="https://github.com/user-attachments/assets/19dcd611-3026-4c11-8b84-ad1b72bbff5c" />
 
 ### Data
 This study is based on openly accessible data from the Lifespan Baby Connectome Project (BCP; https://nda.nih.gov/edit_collection.html?id=2848) and the Lifespan 2.0 Human Connectome Project in Development (HCP-D; https://nda.nih.gov/general-query.html?q=query=featured-datasets:HCP%20Aging%20and%20Development). Cerebellar atlases are available here: https://github.com/DiedrichsenLab/cerebellar_atlases/tree/master.
