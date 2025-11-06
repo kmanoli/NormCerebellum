@@ -20,7 +20,7 @@ Scripts in **scripts/2_normative_modeling** generate normative models based on t
 - **1_qc_euler_dk.py**: Performs QC based on the Euler index of cerebral cortex surface reconstructions (for consistency, we included the same subjects in cerebral and cerebellar normative models).
 - **2_data_prep.py**: Prepares and splits the data for normative modeling.
 - **3_norm_modeling_hbr.py**: Fits parcel-wise linear and 3rd-order b-spline normative models, including model diagnostics and quantile plots. 
-- **4_loocv.py**: Performs model comparison of linear and b-spline models via leave-one-out cross-validation, as well as additional odel diagnostics.
+- **4_loocv.py**: Performs model comparison of linear and b-spline models via leave-one-out cross-validation, as well as additional model diagnostics.
 
 _Expected outputs_: Parcel-wise normative models, model diagnostics, and quantile plots.
 
