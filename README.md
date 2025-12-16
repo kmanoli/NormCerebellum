@@ -48,7 +48,8 @@ _Expected outputs_: Plots of cerebellar-behavioral associations.
 
 _Expected runtime_: ~30 minutes per cerebellar atlas.
 
-<img width="520" height="601" alt="Screenshot 2025-09-03 at 15 03 53" src="https://github.com/user-attachments/assets/19dcd611-3026-4c11-8b84-ad1b72bbff5c" />
+<img width="500" height="650" alt="Screenshot 2025-12-16 at 14 36 04" src="https://github.com/user-attachments/assets/5839ba73-e8fb-4d54-ac50-8f312046308a" />
+
 
 ### Data
 This study is based on openly accessible data from the Lifespan Baby Connectome Project (BCP; https://nda.nih.gov/edit_collection.html?id=2848) and the Lifespan 2.0 Human Connectome Project in Development (HCP-D; https://nda.nih.gov/general-query.html?q=query=featured-datasets:HCP%20Aging%20and%20Development). Cerebellar atlases are available here: https://github.com/DiedrichsenLab/cerebellar_atlases/tree/master.
