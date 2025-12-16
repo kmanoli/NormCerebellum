@@ -13,7 +13,7 @@ import seaborn as sns
 from scipy.stats import wilcoxon
 from sklearn.linear_model import ElasticNetCV, RidgeCV, LassoCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import KFold
+from sklearn.model_selection import RepeatedKFold
 from sklearn.metrics import r2_score
 
 # Configure plotting style
@@ -44,19 +44,26 @@ behavior_names = behaviors.columns.tolist()
 ### REGULARIZED REGRESSION MODEL COMPARISON ###
 ###############################################
 
-# Set up models for comparison (hyperparameter tuning via nested ten-fold cross-validation)
 models = {
     'Ridge': RidgeCV(alphas=[0.001, 0.01, 0.1, 1, 10, 100, 1000], cv=10),
     'Lasso': LassoCV(alphas=[0.001, 0.01, 0.1, 1, 10, 100, 1000], cv=10, max_iter=10000),
     'ElasticNet': ElasticNetCV(
         alphas=[0.001, 0.01, 0.1, 1, 10, 100, 1000],
         l1_ratio=[0.1, 0.5, 0.7, 0.9, 0.99],
-        cv=10, max_iter=10000
+        cv=10,
+        max_iter=10000
     )
 }
 
-# Set up cross-validation
-cv = KFold(n_splits=10, shuffle=True, random_state=42)
+# Set up repeated cross-validation
+n_splits  = 10
+n_repeats = 10  
+
+cv_outer = RepeatedKFold(
+    n_splits=n_splits,
+    n_repeats=n_repeats,
+    random_state=42
+)
 
 # Initialize results dictionaries
 results = {
@@ -68,15 +75,15 @@ results = {
 }
 
 # For each behavior and model type, collect R² values across folds
-print("Comparing regularization methods with error bars...")
+print(f"Comparing regularization methods with repeated nested CV "
+      f"({n_repeats}×{n_splits}-fold outer CV, inner CV=10)...")
 
 for behavior in behavior_names:
     print(f"  Processing behavior: {behavior}")
     y = behaviors[behavior].values
     
     # Use unscaled data for cross-validation splitting
-    for fold_idx, (train_idx, test_idx) in enumerate(cv.split(cortical_data)):
-        print(f"    Fold {fold_idx+1}/10")
+    for fold_idx, (train_idx, test_idx) in enumerate(cv_outer.split(cortical_data), start=1):        
         
         # Scale data within each fold
         scaler_cortex = StandardScaler()
@@ -293,8 +300,8 @@ for data_type in ['Cortex', 'Cerebellum', 'Combined']:
     color = color_dict[data_type]
     for behavior in selected_behaviors:
         # Get data for this combination
-        subset = df_elasticnet[(df_elasticnet['Data Type'] == data_type) & 
-                             (df_elasticnet['Behavior'] == behavior)]
+        subset = df_elasticnet_filtered[(df_elasticnet_filtered['Data Type'] == data_type) &
+                                (df_elasticnet_filtered['Behavior'] == behavior)]
         
         if len(subset) == 0:
             continue
@@ -346,12 +353,16 @@ for behavior in behavior_names_test:
         for j in range(i + 1, len(data_types)):
             dt_a = data_types[i]
             dt_b = data_types[j]
-
+            
+            # R² values across all outer folds × repeats
             r2_a = results[model_name][dt_a][behavior]
             r2_b = results[model_name][dt_b][behavior]
 
+            # Sanity check: Must be same length and aligned by fold
+            assert r2_a.shape == r2_b.shape, "Mismatch in fold counts for Wilcoxon"
+
             # Wilcoxon signed-rank test
-            stat, p = wilcoxon(r2_a, r2_b, zero_method='wilcox', mode='exact' if len(r2_a) <= 25 else 'approx')
+            stat, p = wilcoxon(r2_a, r2_b, zero_method='wilcox', mode='approx') # 'approx' because N will be large with repeated CV
 
             # Count non-zero diffs
             n = np.sum(np.abs(np.array(r2_a) - np.array(r2_b)) > 0)
