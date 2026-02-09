@@ -36,7 +36,7 @@ _Expected outputs_: Heatmap and cerebral cortex plots of significant cerebro-cer
 
 _Expected runtime_: ~2 hours per cerebellar atlas.
 
-<img width="705" height="646" alt="Screenshot 2025-09-03 at 15 03 28" src="https://github.com/user-attachments/assets/bde2a918-4807-42b0-bb13-ef4964ed0169" />
+<img width="607" height="537" alt="Screenshot 2026-02-09 at 18 32 19" src="https://github.com/user-attachments/assets/eefb67a3-96e4-40a7-ae0b-83f4419c7dd2" />
 
 #### D. Associations with behavioral outcomes
 Scripts in **scripts/4_behavioral_outcomes** perform associations of cerebellar growth trajectories and individual differences in behavioral markers.
@@ -48,7 +48,7 @@ _Expected outputs_: Plots of cerebellar-behavioral associations.
 
 _Expected runtime_: ~30 minutes per cerebellar atlas.
 
-<img width="607" height="537" alt="Screenshot 2026-02-09 at 18 32 19" src="https://github.com/user-attachments/assets/635977a3-e193-4761-a5f0-f6c8bed0ba50" />
+![Uploading Screenshot 2026-02-09 at 18.33.30.png…]()
 
 
 ### Data
