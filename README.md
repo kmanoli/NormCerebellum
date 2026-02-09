@@ -48,7 +48,7 @@ _Expected outputs_: Plots of cerebellar-behavioral associations.
 
 _Expected runtime_: ~30 minutes per cerebellar atlas.
 
-<img width="647" height="745" alt="Screenshot 2025-12-16 at 14 38 09" src="https://github.com/user-attachments/assets/27ff433b-5916-4a16-819b-a4514524438e" />
+<img width="544" height="656" alt="Screenshot 2026-02-09 at 18 28 56" src="https://github.com/user-attachments/assets/3e3b6233-bb72-492d-976b-e6a90e46e152" />
 
 
 ### Data
