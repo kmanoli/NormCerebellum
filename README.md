@@ -1,4 +1,4 @@
-## Cerebellar growth is associated with domain-specific cerebral maturation and socio-linguistic behavioral outcomes
+## Cerebellar growth is associated with domain-specific cerebral maturation and socio-linguistic behavioral performance
 
 #### This repository contains analysis scripts and cerebellar normative models presented in this manuscript: https://www.biorxiv.org/content/10.1101/2025.09.11.675513v1
 
@@ -17,7 +17,7 @@ _Expected runtime_: ~15 minutes per atlas per subject (manual corrections: ~3 ho
 
 #### B. Normative modeling
 Scripts in **scripts/2_normative_modeling** generate normative models based on the Hierarchical Bayesian Regression algorithm in the PCN toolkit (https://github.com/amarquand/PCNtoolkit). Sex and site were modeled as batch (random) effects.
-- **1_qc_euler_dk.py**: Performs QC based on the Euler index of cerebral cortex surface reconstructions (for consistency, we included the same subjects in cerebral and cerebellar normative models).
+- **1_qc_euler_yeo17.py**: Performs QC based on the Euler index of cerebral cortex surface reconstructions (for consistency, we included the same subjects in cerebral and cerebellar normative models).
 - **2_data_prep.py**: Prepares and splits the data for normative modeling.
 - **3_norm_modeling_hbr.py**: Fits parcel-wise linear and 3rd-order b-spline normative models, including model diagnostics and quantile plots. 
 - **4_loocv.py**: Performs model comparison of linear and b-spline models via leave-one-out cross-validation, as well as additional model diagnostics.
@@ -29,7 +29,7 @@ _Expected runtime_: ~3 minutes per parcel per model type (linear or b-spline). T
 <img width="1024" height="593" alt="Screenshot 2025-09-03 at 15 03 06" src="https://github.com/user-attachments/assets/a4f99b0c-4785-4759-9412-582e16fc7189" />
 
 #### C. Associations with cerebral cortex
-Scripts in **scripts/3_cerebral_associations** perform associations of growth trajectories between the cerebellum and the cerebral cortex (Desikan-Killiany atlas) via regularized regression.
+Scripts in **scripts/3_cerebral_associations** perform associations of growth trajectories between the cerebellum and the cerebral cortex (Yeo-17 atlas) via regularized regression.
 - **cerebral_assoc.py**: Compares regularization methods, uses the winning method for cerebro-cerebellar associations, performs permutation significance testing, and plots FDR-corrected associations.
 
 _Expected outputs_: Heatmap and cerebral cortex plots of significant cerebro-cerebellar associations.
