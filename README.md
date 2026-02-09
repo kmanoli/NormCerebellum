@@ -1,4 +1,4 @@
-## Cerebellar growth is associated with domain-specific cerebral maturation and socio-linguistic behavioral performance
+## Cerebellar growth is associated with domain-specific cerebral maturation and socio-linguistic behavioral development
 
 #### This repository contains analysis scripts and cerebellar normative models presented in this manuscript: https://www.biorxiv.org/content/10.1101/2025.09.11.675513v1
 
