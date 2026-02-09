@@ -445,94 +445,47 @@ plt.yticks(
 )
 plt.grid(False)
 plt.tight_layout()
-plt.savefig(os.path.join(data_dir, 'cerebral_associations/ccerebral_assoc_fdr_avg.png'), dpi=300, bbox_inches='tight')
+plt.savefig(os.path.join(data_dir, 'cerebral_associations/cerebral_assoc_fdr_avg.png'), dpi=300, bbox_inches='tight')
 
 #####################
 ### PLOT ON BRAIN ###
 #####################
 
-# Load the DK atlas in surface space
-dk_lh = nib.load('/project/normative_cerebellum/atlases/lh.aparc.label.gii')
-dk_lh_data = dk_lh.agg_data()
-dk_rh = nib.load('/project/normative_cerebellum/atlases/rh.aparc.label.gii')
-dk_rh_data = dk_rh.agg_data()
+# Load the Yeo17 atlas in surface space
+yeo17_lh = nib.load('/project/normative_cerebellum/atlases/Yeo_JNeurophysiol11_17Networks.32k.L.label.gii')
+yeo17_lh_data = yeo17_lh.agg_data()
+yeo17_rh = nib.load('/project/normative_cerebellum/atlases/Yeo_JNeurophysiol11_17Networks.32k.L.label.gii')
+yeo17_rh_data = yeo17_rh.agg_data()
 
-# Load the DK label lookup table
-dk_lut = pd.read_csv(os.path.join(data_dir, 'atlas_labels/dk_labels.csv'))
-print(f"DK lookup table shape: {dk_lut.shape}")
-
-# Process the LUT - remove "ctx-" prefix from names and standardize format
-dk_lut['clean_name'] = dk_lut['label'].str.replace('ctx-', '')  # Remove ctx- prefix
-dk_lut['clean_name'] = dk_lut['clean_name'].str.replace('lh-', 'lh_')  # Replace lh- with lh_
-dk_lut['clean_name'] = dk_lut['clean_name'].str.replace('rh-', 'rh_')  # Replace rh- with rh_
+# Load the Yeo 17 label lookup table
+yeo17_lut = pd.read_csv(os.path.join(data_dir, 'atlas_labels/yeo17_labels.csv'))
+print(f"yeo17 lookup table shape: {yeo17_lut.shape}")
 
 # Print sample of lookup table for debugging
 print("Sample of processed lookup table:")
-print(dk_lut[['roi', 'label', 'clean_name']].head(5))
+print(yeo17_lut[['roi', 'label', 'clean_name']].head(5))
 
 # Get unique values from the surface data for debugging
-lh_unique_labels = np.unique(dk_lh_data)
-rh_unique_labels = np.unique(dk_rh_data)
+lh_unique_labels = np.unique(yeo17_lh_data)
+rh_unique_labels = np.unique(yeo17_rh_data)
 print(f"Unique values in LH surface data: {lh_unique_labels[:10]}...")
 print(f"Unique values in RH surface data: {rh_unique_labels[:10]}...")
 
 # Create a direct mapping DataFrame
-mapping_df = pd.DataFrame({
-    'cortical_name': cortical_names,
-    'lut_label': None,    # Will store LUT indices (from lookup table)
-    'img_label': None     # Will store actual image indices (0-35)
-})
+# Extract the network number at the end of the string
+mapping_df['network_idx'] = (
+    mapping_df['cortical_name']
+    .str.extract(r'(\d+)$', expand=False)
+    .astype(int))
+mapping_df['lut_label'] = mapping_df['network_idx']
+mapping_df['img_label'] = mapping_df['network_idx']
 
-# Populate lut_label column by matching names with the lookup table
-for i, name in enumerate(cortical_names):
-    # Find exact match after removing prefix
-    match = dk_lut[dk_lut['clean_name'] == name]
-    if not match.empty:
-        mapping_df.loc[i, 'lut_label'] = match['roi'].values[0]
-    else:
-        # Try alternative formats if exact match fails
-        if name.startswith('lh_'):
-            alt_name = 'lh-' + name[3:]
-            match = dk_lut[dk_lut['clean_name'] == alt_name]
-        elif name.startswith('rh_'):
-            alt_name = 'rh-' + name[3:]
-            match = dk_lut[dk_lut['clean_name'] == alt_name]
-        
-        if not match.empty:
-            mapping_df.loc[i, 'lut_label'] = match['roi'].values[0]
-
-# Fill the img_label column based on a direct mapping between LUT labels and image labels
-# For the right hemisphere, the mapping is 2000->0, 2001->1, etc.
-# For the left hemisphere, the mapping is 1000->0, 1001->1, etc.
-for i, row in mapping_df.iterrows():
-    if pd.notna(row['lut_label']):
-        name = row['cortical_name']
-        lut_value = int(row['lut_label'])
-        
-        if name.startswith('rh_'):
-            # Determine if we need to map using offset or direct lookup
-            for img_idx, unique_label in enumerate(rh_unique_labels):
-                if img_idx >= 2:  # Skip 0 and 1 as they don't correspond to DK parcels
-                    if lut_value == 2000 + img_idx:
-                        mapping_df.loc[i, 'img_label'] = unique_label
-                        break
-        elif name.startswith('lh_'):
-            for img_idx, unique_label in enumerate(lh_unique_labels):
-                if img_idx >= 2:  # Skip 0 and 1 as they don't correspond to DK parcels
-                    if lut_value == 1000 + img_idx:
-                        mapping_df.loc[i, 'img_label'] = unique_label
-                        break
-
-# Filter to keep only rows with valid mappings
-valid_mapping_df = mapping_df.dropna(subset=['img_label']).copy()
-valid_mapping_df['img_label'] = valid_mapping_df['img_label'].astype(int)
-
-print(f"Created mapping for {len(valid_mapping_df)} out of {len(cortical_names)} cortical regions")
+print(f"Created mapping for {len(mapping_df)} out of {len(cortical_names)} cortical regions")
 print("Sample of mapping dataframe:")
-print(valid_mapping_df.head(5))
+print(mapping_df.head(5))
 
 # Convert to dictionary for easy lookup during weight assignment
-cortical_to_img_label = dict(zip(valid_mapping_df['cortical_name'], valid_mapping_df['img_label']))
+cortical_to_img_label = dict(zip(mapping_df['cortical_name'], mapping_df['img_label']))
 
 # Get surfaces for visualization of all FDR weights
 surfaces = fetch_fslr()
@@ -544,9 +497,17 @@ sulc_lh, sulc_rh = surfaces['sulc']
 brain_mask = ~significance_mask_fdr  # Invert the mask
 
 # Use heatmap min and max
-global_min = -0.2 
-global_max = 0.2  
+global_min = -0.3 
+global_max = 0.3 
 cmap = "coolwarm"  
+
+# Helper: get Yeo network index (1..7) from cortical_name
+def get_network_index(cort_name: str) -> int:
+    """Extract the final integer from a name like 'lh_yeo7_network_3' -> 3."""
+    m = re.search(r'(\d+)$', cort_name)
+    if m is None:
+        raise ValueError(f"Could not extract network index from: {cort_name}")
+    return int(m.group(1))
 
 # First, calculate all weight arrays for plotting
 all_weight_arrays = []
@@ -559,42 +520,47 @@ for cereb_idx, cereb_name in enumerate(cereb_names):
     print(f"Processing cerebellar region: {cereb_name}")
     
     # Create weight arrays directly from the surface data
-    lh_weight_data = np.zeros_like(dk_lh_data, dtype=float)
-    rh_weight_data = np.zeros_like(dk_rh_data, dtype=float)
+    lh_weight_data = np.zeros_like(yeo17_lh_data, dtype=float)
+    rh_weight_data = np.zeros_like(yeo17_rh_data, dtype=float)
     
     # Only assign weights for cortical regions that are in the brain_mask
     for cort_idx, cort_name in enumerate(cortical_names):
         # Only process if this cortical region has a significant strong connection
-        if brain_mask[cort_idx, cereb_idx]:
-            weight = weights_matrix[cort_idx, cereb_idx]
-            
-            # Determine hemisphere and assign to the corresponding surface
-            if cort_name.startswith('lh_') and cort_name in cortical_to_img_label:
-                # Get the label for this cortical region
-                label = cortical_to_img_label[cort_name]
-                # Assign weight to all vertices with this label
-                mask = dk_lh_data == label
-                count = np.sum(mask)
-                if count > 0:
-                    lh_weight_data[mask] = weight
-                else:
-                    print(f"    Warning: No vertices found for {cort_name} (label {label})")
+        if not brain_mask[cort_idx, cereb_idx]:
+            continue
+        
+        weight = weights_matrix[cort_idx, cereb_idx]
+
+        # Get the Yeo label index (1..7) from the name
+        try:
+            label = get_network_index(cort_name)
+        except ValueError as e:
+            print(f"    Warning: {e}")
+            continue
+        
+        # Determine hemisphere and assign to the corresponding surface
+        if cort_name.startswith('lh_'):
+            mask = yeo17_lh_data == label
+            count = np.sum(mask)
+            if count > 0:
+                lh_weight_data[mask] = weight
+            else:
+                print(f"Warning: No vertices found for {cort_name} (LH, label {label})")
                     
-            elif cort_name.startswith('rh_') and cort_name in cortical_to_img_label:
-                # Get the label for this cortical region
-                label = cortical_to_img_label[cort_name]
-                # Assign weight to all vertices with this label
-                mask = dk_rh_data == label
-                count = np.sum(mask)
-                if count > 0:
-                    rh_weight_data[mask] = weight
-                else:
-                    print(f"    Warning: No vertices found for {cort_name} (label {label})")
+        elif cort_name.startswith('rh_'):
+            mask = yeo17_rh_data == label
+            count = np.sum(mask)
+            if count > 0:
+                rh_weight_data[mask] = weight
+            else:
+                print(f"Warning: No vertices found for {cort_name} (RH, label {label})")
+        else:
+            print(f"Warning: Unknown hemisphere in name {cort_name}")
     
     # Check if any weights were assigned
     lh_max = np.max(np.abs(lh_weight_data)) if np.any(lh_weight_data) else 0
     rh_max = np.max(np.abs(rh_weight_data)) if np.any(rh_weight_data) else 0
-    print(f"    Max absolute weight value - LH: {lh_max:.4f}, RH: {rh_max:.4f}")
+    print(f"Max absolute weight value - LH: {lh_max:.4f}, RH: {rh_max:.4f}")
     
     # Store the weight arrays for this cerebellar region
     all_weight_arrays.append((cereb_name, lh_weight_data, rh_weight_data))
@@ -605,21 +571,22 @@ for cereb_name, lh_weight_data, rh_weight_data in all_weight_arrays:
         # Create plot with fixed color scale range
         print(f"Creating plot for {cereb_name} with fixed range: {global_min} to {global_max}")
         
-        # Create plot
         p = Plot(lh_surf, rh_surf)
         p.add_layer({'left': sulc_lh, 'right': sulc_rh}, cmap='binary_r', cbar=False)
-        p.add_layer({'left': lh_weight_data, 'right': rh_weight_data}, 
-                   cmap=cmap, 
-                   color_range=(global_min, global_max),
-                   cbar_label='Weight')
-        
-        # Save figure
+        p.add_layer(
+            {'left': lh_weight_data, 'right': rh_weight_data}, 
+            cmap=cmap, 
+            color_range=(global_min, global_max),
+            cbar_label='Weight'
+        )
         fig = p.build()
-        out_fig = os.path.join(data_dir, 'cerebral_associations', f'dk_{cereb_name}_assoc.png')
+        out_fig = os.path.join(data_dir, 'cerebral_associations', f'yeo17_{cereb_name}_assoc.png')
         fig.savefig(out_fig, dpi=300, bbox_inches='tight')
         plt.close(fig)
         print(f"  Saved surface plot: {out_fig}")
         
     except Exception as e:
         print(f"  Error creating surface plot: {e}")
+
+print("Processing complete")
 
