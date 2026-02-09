@@ -53,14 +53,14 @@ def find_high_surfholes(subslist, all_surfholes, threshold):
 project_dir = '/data/normative_cerebellum'
 
 # Configuration for HCPD data
-hcpd_directory = os.path.join(project_dir, 'segmentations/dk/hcpd_euler')
+hcpd_directory = os.path.join(project_dir, 'segmentations/yeo17/hcpd_euler')
 hcpd_subfile = os.path.join(project_dir, 'hcpd_subjects.txt')
 hcpd_file = 'aseg.stats'
 hcpd_line_index = 33  # The line number where surface holes data is found in above file
 hcpd_threshold = 80 # Based on distribution tail (we defined this post-hoc after plotting every dataset distribution)
 
 # Configuration for BCP data
-bcp_directory = os.path.join(project_dir, 'segmentations/dk/bcp_euler')
+bcp_directory = os.path.join(project_dir, 'segmentations/yeo17/bcp_euler')
 bcp_subfile = os.path.join(project_dir, 'bcp_subjects.txt')
 bcp_file = 'aseg.stats'
 bcp_line_index = 32  # The line number where surface holes data is found in above file
@@ -73,7 +73,7 @@ hcpd_subslist = list(hcpd_subs[0])
 hcpd_surfholes = get_surface_holes(hcpd_subfile, hcpd_directory, hcpd_file, hcpd_line_index)
 plot_distribution(hcpd_surfholes)
 hcpd_unfiltered, hcpd_holes, hcpd_num_subs = find_high_surfholes(hcpd_subslist, hcpd_surfholes, hcpd_threshold)
-hcpd_holes.to_csv(os.path.join(project_dir,'normative_modeling/dk_native/input/bad_euler_subs_hcpd.csv', index=False)
+hcpd_holes.to_csv(os.path.join(project_dir,'normative_modeling/yeo17_native/input/bad_euler_subs_hcpd.csv', index=False)
 print(f"The number of HCPD subjects with more than {hcpd_threshold} surfholes is: {hcpd_num_subs}")
 
 # Process BCP data
@@ -83,7 +83,7 @@ bcp_subslist = list(bcp_subs[0])
 bcp_surfholes = get_surface_holes(bcp_subfile, bcp_directory, bcp_file, bcp_line_index)
 plot_distribution(bcp_surfholes)
 bcp_unfiltered, bcp_holes, bcp_num_subs = find_high_surfholes(bcp_subslist, bcp_surfholes, bcp_threshold)
-bcp_holes.to_csv(os.path.join(project_dir, 'normative_modeling/dk_native/input/bad_euler_subs_bcp.csv', index=False)
+bcp_holes.to_csv(os.path.join(project_dir, 'normative_modeling/yeo17_native/input/bad_euler_subs_bcp.csv', index=False)
 print(f"The number of BCP subjects with more than {bcp_threshold} surfholes is: {bcp_num_subs}")
 
 # Rescale surfholes and clean datasets combined
@@ -106,5 +106,5 @@ combined_subs = pd.concat([subs_hcpd, subs_bcp], ignore_index=True)
 all_threshold = 0.5 # Based on distribution tail
 
 all_unfiltered, all_holes, all_num_subs = find_high_surfholes(combined_subs, scaled_data, all_threshold)
-all_holes.to_csv(os.path.join(project_dir, 'normative_modeling/dk_native/input/bad_euler_subs.csv', index=False)
+all_holes.to_csv(os.path.join(project_dir, 'normative_modeling/yeo17_native/input/bad_euler_subs.csv', index=False)
 print(f"The number of subjects with more than {all_threshold} surfholes is: {all_num_subs}")
