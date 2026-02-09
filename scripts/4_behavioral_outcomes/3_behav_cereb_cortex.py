@@ -74,6 +74,16 @@ results = {
     } for model_name in models.keys()
 }
 
+
+# Store fold R² grouped within each repeat (unit of inference = repeat)
+results_by_repeat = {
+    model_name: {
+        'Cortex': {behav: [[] for _ in range(n_repeats)] for behav in behavior_names},
+        'Cerebellum': {behav: [[] for _ in range(n_repeats)] for behav in behavior_names},
+        'Combined': {behav: [[] for _ in range(n_repeats)] for behav in behavior_names}
+    } for model_name in models.keys()
+}
+
 # For each behavior and model type, collect R² values across folds
 print(f"Comparing regularization methods with repeated nested CV "
       f"({n_repeats}×{n_splits}-fold outer CV, inner CV=10)...")
@@ -84,6 +94,10 @@ for behavior in behavior_names:
     
     # Use unscaled data for cross-validation splitting
     for fold_idx, (train_idx, test_idx) in enumerate(cv_outer.split(cortical_data), start=1):        
+        
+        # Identify repeat index (0..n_repeats-1) so we can aggregate later
+        # RepeatedKFold yields splits in blocks of n_splits per repeat
+        repeat_idx = (fold_idx - 1) // n_splits
         
         # Scale data within each fold
         scaler_cortex = StandardScaler()
@@ -105,6 +119,7 @@ for behavior in behavior_names:
             y_pred_cortex = model_cortex.predict(cortical_test_scaled)
             r2_cortex = r2_score(y[test_idx], y_pred_cortex)
             results[model_name]['Cortex'][behavior].append(r2_cortex)
+            results_by_repeat[model_name]['Cortex'][behavior][repeat_idx].append(r2_cortex)  # NEW
             
             # Cerebellum only
             model_cereb = model_class.__class__(**model_class.get_params())
@@ -112,6 +127,7 @@ for behavior in behavior_names:
             y_pred_cereb = model_cereb.predict(cerebellar_test_scaled)
             r2_cereb = r2_score(y[test_idx], y_pred_cereb)
             results[model_name]['Cerebellum'][behavior].append(r2_cereb)
+            results_by_repeat[model_name]['Cerebellum'][behavior][repeat_idx].append(r2_cereb)  # NEW
             
             # Combined - concatenate scaled features
             X_combined_train = np.concatenate([cortical_train_scaled, cerebellar_train_scaled], axis=1)
@@ -122,16 +138,33 @@ for behavior in behavior_names:
             y_pred_combined = model_combined.predict(X_combined_test)
             r2_combined = r2_score(y[test_idx], y_pred_combined)
             results[model_name]['Combined'][behavior].append(r2_combined)
+            results_by_repeat[model_name]['Combined'][behavior][repeat_idx].append(r2_combined)  # NEW
 
 #########################################
 ### CALCULATE MEAN AND STANDARD ERROR ###
 #########################################
 
+# Aggregate fold performance within each repeat (N = n_repeats)
+repeat_mean = {
+    model_name: {
+        data_type: {
+            behav: np.array([
+                np.mean(results_by_repeat[model_name][data_type][behav][r])
+                for r in range(n_repeats)
+            ])
+            for behav in behavior_names
+        }
+        for data_type in ['Cortex', 'Cerebellum', 'Combined']
+    }
+    for model_name in models.keys()
+}
+
 # Calculate mean R² and standard error for each model, feature set, and behavior separately
+# NOTE: Computed across repeats (N = n_repeats)
 mean_r2 = {
     model_name: {
         data_type: {
-            behav: np.mean(results[model_name][data_type][behav]) 
+            behav: np.mean(repeat_mean[model_name][data_type][behav]) 
             for behav in behavior_names
         } for data_type in ['Cortex', 'Cerebellum', 'Combined']
     } for model_name in models.keys()
@@ -140,7 +173,7 @@ mean_r2 = {
 sem_r2 = {
     model_name: {
         data_type: {
-            behav: np.std(results[model_name][data_type][behav], ddof=1) / np.sqrt(len(results[model_name][data_type][behav]))
+            behav: np.std(repeat_mean[model_name][data_type][behav], ddof=1) / np.sqrt(len(repeat_mean[model_name][data_type][behav]))
             for behav in behavior_names
         } for data_type in ['Cortex', 'Cerebellum', 'Combined']
     } for model_name in models.keys()
@@ -354,34 +387,40 @@ for behavior in behavior_names_test:
             dt_a = data_types[i]
             dt_b = data_types[j]
             
-            # R² values across all outer folds × repeats
-            r2_a = results[model_name][dt_a][behavior]
-            r2_b = results[model_name][dt_b][behavior]
+            # Use repeat-level mean R² values (N = n_repeats)
+            r2_a = np.array([
+                np.mean(results_by_repeat[model_name][dt_a][behavior][r])
+                for r in range(n_repeats)
+            ])
+            r2_b = np.array([
+                np.mean(results_by_repeat[model_name][dt_b][behavior][r])
+                for r in range(n_repeats)
+            ])
 
-            # Sanity check: Must be same length and aligned by fold
-            assert r2_a.shape == r2_b.shape, "Mismatch in fold counts for Wilcoxon"
+            # Sanity check: Must be same length and aligned by repeat
+            assert r2_a.shape == r2_b.shape, "Mismatch in repeat counts for Wilcoxon"
 
-            # Wilcoxon signed-rank test
-            stat, p = wilcoxon(r2_a, r2_b, zero_method='wilcox', mode='approx') # 'approx' because N will be large with repeated CV
+            # Wilcoxon signed-rank test (repeat-level; small N -> no need for 'approx')
+            stat, p = wilcoxon(r2_a, r2_b, zero_method='wilcox')
 
             # Count non-zero diffs
-            n = np.sum(np.abs(np.array(r2_a) - np.array(r2_b)) > 0)
+            n = int(np.sum(np.abs(r2_a - r2_b) > 0))
 
             comparison_results.append({
                 'Behavior': behavior,
                 'Data Type A': dt_a,
                 'Data Type B': dt_b,
-                'Mean R2 A': np.mean(r2_a),
-                'SD R2 A': np.std(r2_a, ddof=1),
-                'Median R2 A': np.median(r2_a),
-                'Mean R2 B': np.mean(r2_b),
-                'SD R2 B': np.std(r2_b, ddof=1),
-                'Median R2 B': np.median(r2_b),
-                'Wilcoxon W': stat,
-                'Wilcoxon p-value': p,
+                'Mean R2 A': float(np.mean(r2_a)),
+                'SD R2 A': float(np.std(r2_a, ddof=1)),
+                'Median R2 A': float(np.median(r2_a)),
+                'Mean R2 B': float(np.mean(r2_b)),
+                'SD R2 B': float(np.std(r2_b, ddof=1)),
+                'Median R2 B': float(np.median(r2_b)),
+                'Wilcoxon W': float(stat),
+                'Wilcoxon p-value': float(p),
                 'n (non-zero diffs)': n,
-                'A better?': np.median(r2_a) > np.median(r2_b),
-                'Significant (p < 0.05)': p < 0.05
+                'A better?': bool(np.median(r2_a) > np.median(r2_b)),
+                'Significant (p < 0.05)': bool(p < 0.05)
             })
 
 df_dt_comparisons = pd.DataFrame(comparison_results)
