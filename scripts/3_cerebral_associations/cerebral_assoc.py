@@ -374,7 +374,7 @@ plt.yticks(rotation=0)
 plt.tight_layout()
 plt.savefig(os.path.join(data_dir, 'cerebral_associations/cerebral_assoc_fdr.png'), dpi=300, bbox_inches='tight')
 
-# Average hemispheres for cleaner visualization
+# Average hemispheres for cleaner visualization (note: this was only done for the DK atlas)
 cortical_names_no_prefix = []
 region_mapping = {}
 
