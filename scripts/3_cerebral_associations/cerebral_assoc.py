@@ -141,7 +141,7 @@ model_names = list(models.keys())
 r2_values = [mean_r2_per_model[model] for model in model_names]
 r2_stds = [std_r2_per_model[model] for model in model_names]
 
-# Define colors to match original
+# Define colors
 colors = {'Ridge': 'salmon', 'Lasso': 'silver', 'ElasticNet': 'dimgrey'}
 bar_colors = [colors[model] for model in model_names]
 
